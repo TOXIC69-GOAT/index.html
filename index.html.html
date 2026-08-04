@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flouz — Simulateur de déclaration</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+  :root{
+    --ink:#180E2E;
+    --navy:#0F0A1C;
+    --navy-2:#1C1333;
+    --paper:#F4F0FF;
+    --paper-2:#FFFFFF;
+    --muted:#786E92;
+    --muted-light:#B6ACD6;
+    --gold:#8B5CF6;
+    --gold-light:#C6FF3D;
+    --pink:#FF3D9A;
+    --violet:#8B5CF6;
+    --blue:#5B8DEF;
+    --lime:#C6FF3D;
+    --line:#E7DFFF;
+    --radius:18px;
+    --grad: linear-gradient(90deg, #FF3D9A 0%, #8B5CF6 55%, #5B8DEF 100%);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 15% 0%, rgba(255,61,154,0.18), transparent 45%),
+      radial-gradient(circle at 85% 15%, rgba(91,141,239,0.18), transparent 45%),
+      var(--navy);
+    color:var(--ink);
+    font-family:'Plus Jakarta Sans', sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.01ms !important; transition-duration:0.01ms !important;}
+  }
+
+  .tricolore{height:4px; width:100%; background:var(--grad);}
+
+  header.masthead{
+    padding:64px 24px 44px;
+    text-align:center;
+  }
+  .eyebrow{
+    font-family:'Space Mono', monospace;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    font-size:11px;
+    color:var(--lime);
+    margin-bottom:16px;
+  }
+  h1.title{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:clamp(40px, 7vw, 68px);
+    margin:0 0 14px;
+    letter-spacing:-0.02em;
+    background:var(--grad);
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+  }
+  .subtitle{
+    color:var(--muted-light);
+    font-size:16px;
+    max-width:520px;
+    margin:0 auto;
+    line-height:1.6;
+  }
+
+  main{
+    max-width:760px;
+    margin:0 auto;
+    padding:48px 20px 96px;
+  }
+
+  .card{
+    background:var(--paper-2);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    margin-bottom:24px;
+    overflow:hidden;
+    box-shadow:0 8px 30px rgba(139,92,246,0.12);
+  }
+  .card-head{
+    display:flex;
+    align-items:baseline;
+    gap:14px;
+    padding:22px 26px 16px;
+    border-bottom:1px solid var(--line);
+  }
+  .card-num{
+    font-family:'Space Mono', monospace;
+    font-weight:700;
+    font-size:13px;
+    color:#fff;
+    background:var(--grad);
+    width:26px;height:26px;
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+  }
+  .card-title{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:21px;
+    margin:0;
+    color:var(--ink);
+  }
+  .card-body{padding:22px 26px 26px;}
+  .hint{color:var(--muted); font-size:13px; line-height:1.6; margin:0 0 16px;}
+
+  /* Section 1 : parts fiscales */
+  .row-inline{display:flex; gap:14px; flex-wrap:wrap;}
+  .field{flex:1; min-width:150px;}
+  label{
+    display:block;
+    font-size:12px;
+    font-family:'Space Mono', monospace;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--muted);
+    margin-bottom:6px;
+  }
+  select, input[type=text], input[type=number]{
+    width:100%;
+    padding:11px 14px;
+    border:1.5px solid var(--line);
+    border-radius:12px;
+    font-family:'Plus Jakarta Sans', sans-serif;
+    font-size:14px;
+    background:var(--paper-2);
+    color:var(--ink);
+  }
+  select:focus, input:focus{
+    outline:none;
+    border-color:var(--violet);
+    box-shadow:0 0 0 4px rgba(139,92,246,0.15);
+  }
+  .parts-result{
+    margin-top:16px;
+    padding:14px 16px;
+    background:var(--paper);
+    border-radius:12px;
+    border-left:4px solid var(--pink);
+    font-family:'Space Mono', monospace;
+    font-size:13px;
+    font-weight:700;
+  }
+
+  /* Dropzone */
+  .dropzone{
+    border:2px dashed #D8C9FF;
+    border-radius:16px;
+    padding:34px 20px;
+    text-align:center;
+    cursor:pointer;
+    background:linear-gradient(135deg, rgba(255,61,154,0.04), rgba(91,141,239,0.06));
+    transition:border-color .15s, transform .15s;
+  }
+  .dropzone:hover, .dropzone.drag{
+    border-color:var(--violet);
+    transform:scale(1.01);
+  }
+  .dropzone p{margin:0; color:var(--muted); font-size:13px;}
+  .dropzone .dz-title{font-size:14px; color:var(--ink); margin-bottom:4px; font-weight:500;}
+
+  .fiche-list{margin-top:18px; display:flex; flex-direction:column; gap:10px;}
+  .fiche-item{
+    display:flex; align-items:center; gap:12px;
+    padding:12px 14px;
+    background:var(--paper);
+    border-radius:14px;
+    border:1px solid var(--line);
+    font-size:13px;
+  }
+  .fiche-item .fname{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--ink);}
+  .fiche-status{
+    font-family:'Space Mono', monospace;
+    font-weight:700;
+    font-size:11px;
+    padding:4px 10px;
+    border-radius:20px;
+    white-space:nowrap;
+  }
+  .st-loading{background:#FFF0D6; color:#B8760B;}
+  .st-ok{background:#DDFAC3; color:#3F8A0F;}
+  .st-fail{background:#FFE0EE; color:var(--pink);}
+  .fiche-amount{font-family:'Space Mono', monospace; font-weight:700; min-width:90px; text-align:right;}
+  .fiche-manual{width:100px; padding:6px 8px; font-size:12px;}
+  .fiche-remove{
+    background:none; border:none; color:var(--muted); cursor:pointer;
+    font-size:18px; line-height:1; padding:2px 6px;
+  }
+  .fiche-remove:hover{color:var(--pink);}
+
+  .btn-secondary{
+    margin-top:14px;
+    background:none;
+    border:1.5px solid var(--violet);
+    color:var(--violet);
+    padding:10px 18px;
+    font-family:'Space Mono', monospace;
+    font-weight:700;
+    font-size:12px;
+    border-radius:100px;
+    cursor:pointer;
+    letter-spacing:.02em;
+    transition:all .15s;
+  }
+  .btn-secondary:hover{background:var(--violet); color:#fff;}
+
+  /* Autres revenus */
+  .revenu-row{
+    display:flex; gap:10px; align-items:center;
+    margin-bottom:10px;
+  }
+  .revenu-row input[type=text]{flex:2;}
+  .revenu-row input[type=number]{flex:1; text-align:right; font-family:'Space Mono', monospace;}
+
+  /* CTA */
+  .cta-wrap{text-align:center; margin:44px 0;}
+  .btn-primary{
+    background:var(--grad);
+    background-size:200% auto;
+    color:#fff;
+    border:none;
+    padding:18px 48px;
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:18px;
+    border-radius:100px;
+    cursor:pointer;
+    letter-spacing:.01em;
+    box-shadow:0 10px 30px rgba(255,61,154,0.3);
+    transition:transform .15s, box-shadow .15s, background-position .4s;
+  }
+  .btn-primary:hover{transform:translateY(-2px) scale(1.02); background-position:right center; box-shadow:0 14px 36px rgba(139,92,246,0.4);}
+  .btn-primary:active{transform:translateY(0) scale(0.99);}
+  .btn-primary:disabled{opacity:.4; cursor:not-allowed; transform:none; box-shadow:none;}
+  .cta-note{font-size:12px; color:var(--muted-light); margin-top:12px; font-family:'Space Mono', monospace;}
+
+  /* Résultat / odomètre */
+  .result{
+    position:relative;
+    background:var(--navy);
+    color:var(--paper);
+    border-radius:24px;
+    padding:48px 26px;
+    text-align:center;
+    display:none;
+    overflow:hidden;
+  }
+  .result.show{display:block;}
+  .result::before{
+    content:'';
+    position:absolute; inset:-40%;
+    background:conic-gradient(from 0deg, rgba(255,61,154,0.25), rgba(139,92,246,0.25), rgba(91,141,239,0.25), rgba(198,255,61,0.2), rgba(255,61,154,0.25));
+    animation:spin 12s linear infinite;
+    filter:blur(60px);
+    opacity:.6;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  .result-eyebrow, .odometer, .result-sub, .breakdown{ position:relative; z-index:1; }
+  .result-eyebrow{
+    font-family:'Space Mono', monospace;
+    font-weight:700;
+    font-size:11px;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    color:var(--lime);
+    margin-bottom:24px;
+  }
+  .odometer{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:3px;
+    padding:18px 24px;
+    background:var(--navy-2);
+    border-radius:16px;
+    border:1px solid rgba(255,255,255,0.1);
+    box-shadow:0 0 0 rgba(255,61,154,0);
+    transition:box-shadow .3s, transform .3s;
+  }
+  .odometer.pop{
+    animation:pop 0.6s cubic-bezier(.34,1.56,.64,1);
+    box-shadow:0 0 60px rgba(255,61,154,0.45), 0 0 100px rgba(139,92,246,0.3);
+  }
+  @keyframes pop{
+    0%{ transform:scale(1); }
+    45%{ transform:scale(1.12); }
+    70%{ transform:scale(0.97); }
+    100%{ transform:scale(1); }
+  }
+  .odo-euro{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:44px;
+    background:var(--grad);
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+    margin-right:6px;
+    align-self:center;
+  }
+  .digit-col{
+    width:36px; height:60px;
+    overflow:hidden;
+    position:relative;
+    background:#150C28;
+    border-radius:8px;
+  }
+  .digit-col.comma{width:14px; background:transparent;}
+  .digit-col.comma .digit-strip{display:flex; align-items:center; justify-content:center; height:60px; font-size:34px; color:var(--lime); font-family:'Space Grotesk', sans-serif;}
+  .digit-strip{
+    display:flex;
+    flex-direction:column;
+    transition:transform 1.4s cubic-bezier(.2,.9,.25,1);
+  }
+  .digit-strip div{
+    height:60px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:'Space Mono', monospace;
+    font-size:34px;
+    font-weight:700;
+    color:#fff;
+  }
+  .result-sub{margin-top:20px; color:var(--muted-light); font-size:12px; font-family:'Space Mono', monospace;}
+
+  .breakdown{
+    margin-top:34px;
+    text-align:left;
+    border-top:1px solid rgba(255,255,255,0.12);
+    padding-top:22px;
+  }
+  .brk-row{
+    display:flex; justify-content:space-between;
+    padding:9px 0;
+    border-bottom:1px dashed rgba(255,255,255,0.1);
+    font-size:13px;
+  }
+  .brk-row.total{border-bottom:none; font-weight:700; color:var(--lime); padding-top:14px; font-size:15px;}
+  .brk-label{color:var(--muted-light);}
+  .brk-val{font-family:'Space Mono', monospace;}
+
+  .confetti-piece{
+    position:fixed;
+    top:0; left:0;
+    width:9px; height:9px;
+    pointer-events:none;
+    z-index:999;
+    will-change:transform, opacity;
+  }
+
+  .deadline-status{
+    margin-top:16px;
+    padding:14px 16px;
+    border-radius:14px;
+    font-family:'Space Mono', monospace;
+    font-size:13px;
+    font-weight:700;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .deadline-status.open{background:#DDFAC3; color:#3F8A0F;}
+  .deadline-status.soon{background:#FFF0D6; color:#B8760B;}
+  .deadline-status.closed{background:#F4F0FF; color:var(--muted);}
+  .deadline-grid{
+    margin-top:16px;
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(140px,1fr));
+    gap:10px;
+  }
+  .deadline-cell{
+    padding:14px;
+    background:var(--paper);
+    border-radius:12px;
+    border:1.5px solid var(--line);
+    text-align:center;
+  }
+  .deadline-cell.active{border-color:var(--pink); background:#FFF0F7;}
+  .deadline-cell .dc-label{font-size:11px; color:var(--muted); font-family:'Space Mono', monospace; text-transform:uppercase; letter-spacing:.04em;}
+  .deadline-cell .dc-date{font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:17px; margin-top:6px; color:var(--ink);}
+
+  .disclaimer{
+    max-width:760px; margin:0 auto; padding:0 20px 40px;
+    color:var(--muted-light); font-size:12px; line-height:1.7; text-align:center;
+  }
+  .disclaimer a{color:var(--lime);}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="eyebrow">✦ Simulateur impôt 2026 ✦</div>
+  <h1 class="title">Flouz</h1>
+  <p class="subtitle">Balance tes fiches de paie, ajoute tes autres revenus, et regarde le chiffre tomber — barème 2026 appliqué aux revenus 2025.</p>
+</header>
+<div class="tricolore"></div>
+
+<main>
+
+  <!-- SECTION 1 — Foyer -->
+  <section class="card">
+    <div class="card-head">
+      <span class="card-num">1</span>
+      <h2 class="card-title">Votre foyer fiscal</h2>
+    </div>
+    <div class="card-body">
+      <p class="hint">Le nombre de parts détermine votre quotient familial et influence directement le montant de l'impôt.</p>
+      <div class="row-inline">
+        <div class="field">
+          <label for="situation">Situation</label>
+          <select id="situation">
+            <option value="1">Célibataire / divorcé(e) / veuf(ve)</option>
+            <option value="2">Marié(e) / pacsé(e)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="enfants">Enfants à charge</label>
+          <input type="number" id="enfants" min="0" value="0" step="1">
+        </div>
+      </div>
+      <div class="parts-result" id="partsResult">Nombre de parts : 1</div>
+    </div>
+  </section>
+
+  <!-- SECTION 2 — Fiches de paie -->
+  <section class="card">
+    <div class="card-head">
+      <span class="card-num">2</span>
+      <h2 class="card-title">Vos fiches de paie</h2>
+    </div>
+    <div class="card-body">
+      <p class="hint">Déposez vos fiches (image ou PDF). Une IA lit chaque fiche et extrait le salaire net imposable — vérifiez et corrigez si besoin.</p>
+      <div class="dropzone" id="dropzone">
+        <div class="dz-title">Glissez vos fiches de paie ici</div>
+        <p>ou cliquez pour parcourir — JPG, PNG, PDF</p>
+      </div>
+      <input type="file" id="fileInput" multiple accept="image/*,application/pdf" style="display:none">
+      <div class="fiche-list" id="ficheList"></div>
+      <button class="btn-secondary" id="addManualFiche" type="button">+ Ajouter un montant manuellement</button>
+    </div>
+  </section>
+
+  <!-- SECTION 3 — Autres revenus -->
+  <section class="card">
+    <div class="card-head">
+      <span class="card-num">3</span>
+      <h2 class="card-title">Autres revenus</h2>
+    </div>
+    <div class="card-body">
+      <p class="hint">Freelance, location, autres services — ajoutez chaque source séparément.</p>
+      <div id="revenuList"></div>
+      <button class="btn-secondary" id="addRevenu" type="button">+ Ajouter un revenu</button>
+    </div>
+  </section>
+
+  <!-- SECTION 4 — Date limite -->
+  <section class="card">
+    <div class="card-head">
+      <span class="card-num">4</span>
+      <h2 class="card-title">Date limite</h2>
+    </div>
+    <div class="card-body">
+      <p class="hint">La date butoir dépend de ton mode de déclaration et, pour le en ligne, de ton département.</p>
+      <div class="row-inline">
+        <div class="field">
+          <label for="zoneSelect">Ta zone (en ligne)</label>
+          <select id="zoneSelect">
+            <option value="zone1">Zone 1 — départements 01 à 19 + non-résidents</option>
+            <option value="zone2">Zone 2 — départements 20 à 54</option>
+            <option value="zone3" selected>Zone 3 — départements 55 à 976 (dont Paris/IDF)</option>
+          </select>
+        </div>
+      </div>
+      <div class="deadline-status" id="deadlineStatus"></div>
+      <div class="deadline-grid" id="deadlineGrid"></div>
+      <p class="hint" id="deadlineNote" style="margin-top:14px; margin-bottom:0;"></p>
+    </div>
+  </section>
+
+  <div class="cta-wrap">
+    <button class="btn-primary" id="calcBtn" type="button">Calculer mon impôt</button>
+    <div class="cta-note" id="calcNote">Aucune fiche analysée pour le moment</div>
+  </div>
+
+  <!-- RÉSULTAT -->
+  <section class="result" id="result">
+    <div class="result-eyebrow">Impôt net estimé</div>
+    <div class="odometer" id="odometer"><span class="odo-euro">€</span></div>
+    <div class="result-sub" id="resultSub"></div>
+    <div class="breakdown" id="breakdown"></div>
+  </section>
+
+</main>
+
+<div class="disclaimer">
+  Cet outil produit une <strong>estimation indicative</strong> à partir du barème progressif 2026 (revenus 2025) et d'une lecture automatique de vos documents, qui peut comporter des erreurs — relisez toujours les montants extraits. Il ne remplace pas votre déclaration officielle sur <a href="https://www.impots.gouv.fr" target="_blank" rel="noopener">impots.gouv.fr</a>, seul service habilité à recevoir votre déclaration. Vos documents sont envoyés uniquement à l'API Claude pour être analysés et ne sont pas conservés par cette page.
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js" defer></script>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+/* ---------- ÉTAT ---------- */
+let fiches = []; // {id, name, status:'loading'|'ok'|'fail'|'manual', amount, editable}
+let revenus = []; // {id, label, amount}
+let ficheCounter = 0;
+let revenuCounter = 0;
+
+/* ---------- PARTS FISCALES ---------- */
+function computeParts(){
+  const situation = parseInt(document.getElementById('situation').value, 10);
+  const enfants = Math.max(0, parseInt(document.getElementById('enfants').value || '0', 10));
+  let parts = situation; // 1 ou 2
+  if(enfants <= 2){
+    parts += enfants * 0.5;
+  } else {
+    parts += 2*0.5 + (enfants - 2) * 1;
+  }
+  document.getElementById('partsResult').textContent = 'Nombre de parts : ' + parts;
+  return parts;
+}
+document.getElementById('situation').addEventListener('change', () => { computeParts(); updateCalcNote(); });
+document.getElementById('enfants').addEventListener('input', () => { computeParts(); updateCalcNote(); });
+computeParts();
+
+/* ---------- FICHES DE PAIE ---------- */
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+const ficheListEl = document.getElementById('ficheList');
+
+dropzone.addEventListener('click', () => fileInput.click());
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropzone.classList.remove('drag');
+  handleFiles(e.dataTransfer.files);
+});
+fileInput.addEventListener('change', () => { handleFiles(fileInput.files); fileInput.value=''; });
+
+function handleFiles(fileListRaw){
+  const files = Array.from(fileListRaw);
+  files.forEach(file => {
+    const id = 'f' + (++ficheCounter);
+    const entry = {id, name:file.name, status:'loading', amount:0};
+    fiches.push(entry);
+    renderFiches();
+    processFile(file, entry);
+  });
+}
+
+async function processFile(file, entry){
+  try{
+    const img = await fileToImageBase64(file);
+    const extracted = await extractPayslip(img);
+    if(extracted && extracted.trouve && typeof extracted.net_imposable === 'number' && extracted.net_imposable > 0){
+      entry.status = 'ok';
+      entry.amount = extracted.net_imposable;
+      entry.periode = extracted.periode || '';
+      entry.libelle = extracted.libelle_trouve || '';
+    } else {
+      entry.status = 'fail';
+      entry.amount = 0;
+    }
+  }catch(err){
+    console.error(err);
+    entry.status = 'fail';
+    entry.amount = 0;
+  }
+  renderFiches();
+  updateCalcNote();
+}
+
+async function fileToImageBase64(file){
+  if(file.type === 'application/pdf'){
+    const buf = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({data:buf}).promise;
+    const page = await pdf.getPage(1);
+    const viewport = page.getViewport({scale:2});
+    const canvas = document.createElement('canvas');
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    const ctx = canvas.getContext('2d');
+    await page.render({canvasContext:ctx, viewport}).promise;
+    const dataUrl = canvas.toDataURL('image/png');
+    return {mediaType:'image/png', data:dataUrl.split(',')[1]};
+  } else {
+    const dataUrl = await new Promise((res, rej) => {
+      const r = new FileReader();
+      r.onload = () => res(r.result);
+      r.onerror = rej;
+      r.readAsDataURL(file);
+    });
+    const mediaType = file.type || 'image/jpeg';
+    return {mediaType, data:dataUrl.split(',')[1]};
+  }
+}
+
+async function extractPayslip(img){
+  const systemPrompt = `Tu es un expert-comptable français spécialisé dans la lecture de fiches de paie (bulletins de salaire) de tous les logiciels de paie du marché : Silae, PayFit, ADP Decidium, Cegid, Sage, Ciel Paie, Ypsilon, EBP, ou des bulletins faits sur mesure. Ta seule tâche est de localiser un montant précis et de répondre en JSON strict, sans texte avant/après, sans balises markdown.`;
+
+  const guide = `MISSION
+Trouve sur ce document le montant du "salaire net imposable" (appelé aussi "net fiscal", "cumul net imposable", ou parfois juste "net imposable"). C'est la base qui sert au calcul de l'impôt sur le revenu — PAS le salaire net payé au salarié.
+
+OÙ LE CHERCHER
+- Il se trouve presque toujours dans le bas du bulletin, dans un bloc récapitulatif ou une ligne de synthèse, souvent à côté d'autres totaux comme "Net à payer", "Net payé", "Brut", "Cumul brut".
+- Sur certains bulletins (Silae, ADP), il apparaît dans un tableau de cumuls avec deux colonnes : "Mois" et "Cumul annuel" — prends la colonne "Mois" si tu analyses un seul mois, sauf si le document est explicitement un récapitulatif annuel (auquel cas prends le cumul annuel et indique-le dans la période).
+- Sur d'autres (PayFit, Cegid), c'est une ligne isolée juste sous ou au-dessus du "Net à payer avant impôt sur le revenu".
+
+LIBELLÉS QUI CORRESPONDENT (variantes courantes que tu peux rencontrer, en français) :
+- "Net imposable"
+- "Net fiscal"
+- "Cumul net imposable"
+- "Salaire net imposable"
+- "Net imposable (base PAS)" ou "Net fiscal (base PAS)" — PAS = prélèvement à la source, c'est bien la même base
+- "Total net imposable"
+
+LIBELLÉS QUI NE CORRESPONDENT PAS — attention à ne pas les confondre :
+- "Net à payer" ou "Net payé" (montant réellement versé, différent : il ne compte pas certaines cotisations non déductibles)
+- "Net à payer avant impôt sur le revenu" (encore différent du net imposable, ne pas confondre malgré le nom proche)
+- "Salaire brut" ou "Brut"
+- "Montant du prélèvement à la source" ou "Taux de prélèvement"
+- "Net social" (nouvelle mention depuis 2024, sert à d'autres fins, pas à l'impôt)
+
+FORMAT DES NOMBRES
+Les montants français utilisent l'espace comme séparateur de milliers et la virgule comme séparateur décimal, par exemple "2 384,57" signifie 2384.57. Renvoie toujours un nombre JavaScript classique avec un point décimal, sans espace ni symbole €.
+
+CAS PARTICULIERS
+- Si le document est illisible, flou, tronqué, ou si aucun libellé net imposable/net fiscal n'apparaît avec certitude : trouve = false, net_imposable = 0.
+- Si le document a deux périodes ou plusieurs mois sur une même page, prends le montant du mois principal du bulletin (pas un cumul), et indique-le dans "periode".
+- Si tu vois plusieurs montants qui pourraient correspondre, choisis celui dont le libellé colle le mieux à "net imposable" / "net fiscal" et indique ce libellé exact dans "libelle_trouve".
+
+RÉPONDS STRICTEMENT AVEC CE JSON, RIEN D'AUTRE :
+{"periode": "mois année ou 'année complète' ou null", "net_imposable": nombre_avec_point_decimal, "libelle_trouve": "le libellé exact lu sur le document, ou null", "trouve": true_ou_false}`;
+
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({
+      model:"claude-sonnet-4-6",
+      max_tokens:400,
+      system: systemPrompt,
+      messages:[{
+        role:"user",
+        content:[
+          {type:"image", source:{type:"base64", media_type:img.mediaType, data:img.data}},
+          {type:"text", text: guide}
+        ]
+      }]
+    })
+  });
+  const data = await response.json();
+  const textBlock = (data.content || []).find(b => b.type === 'text');
+  if(!textBlock) return null;
+  const clean = textBlock.text.replace(/```json|```/g, '').trim();
+  try{
+    return JSON.parse(clean);
+  }catch(e){
+    return null;
+  }
+}
+
+function renderFiches(){
+  ficheListEl.innerHTML = '';
+  fiches.forEach(entry => {
+    const row = document.createElement('div');
+    row.className = 'fiche-item';
+
+    const fname = document.createElement('span');
+    fname.className = 'fname';
+    fname.textContent = entry.name;
+    row.appendChild(fname);
+
+    if(entry.status === 'loading'){
+      const st = document.createElement('span');
+      st.className = 'fiche-status st-loading';
+      st.textContent = 'Analyse en cours…';
+      row.appendChild(st);
+    } else if(entry.status === 'ok'){
+      const st = document.createElement('span');
+      st.className = 'fiche-status st-ok';
+      st.textContent = entry.periode ? entry.periode : 'Lu';
+      row.appendChild(st);
+      const amt = document.createElement('span');
+      amt.className = 'fiche-amount';
+      amt.textContent = formatEUR(entry.amount);
+      if(entry.libelle){ amt.title = 'Détecté via : "' + entry.libelle + '"'; }
+      row.appendChild(amt);
+    } else if(entry.status === 'fail' || entry.status === 'manual'){
+      const st = document.createElement('span');
+      st.className = 'fiche-status st-fail';
+      st.textContent = entry.status === 'fail' ? 'Non détecté' : 'Manuel';
+      row.appendChild(st);
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.className = 'fiche-manual';
+      input.placeholder = 'Montant €';
+      input.value = entry.amount || '';
+      input.addEventListener('input', () => {
+        entry.amount = parseFloat(input.value) || 0;
+        entry.status = 'manual';
+        updateCalcNote();
+      });
+      row.appendChild(input);
+    }
+
+    const rm = document.createElement('button');
+    rm.className = 'fiche-remove';
+    rm.type = 'button';
+    rm.textContent = '×';
+    rm.addEventListener('click', () => {
+      fiches = fiches.filter(f => f.id !== entry.id);
+      renderFiches();
+      updateCalcNote();
+    });
+    row.appendChild(rm);
+
+    ficheListEl.appendChild(row);
+  });
+}
+
+document.getElementById('addManualFiche').addEventListener('click', () => {
+  const id = 'f' + (++ficheCounter);
+  fiches.push({id, name:'Fiche saisie manuellement', status:'manual', amount:0});
+  renderFiches();
+});
+
+/* ---------- AUTRES REVENUS ---------- */
+const revenuListEl = document.getElementById('revenuList');
+function renderRevenus(){
+  revenuListEl.innerHTML = '';
+  revenus.forEach(r => {
+    const row = document.createElement('div');
+    row.className = 'revenu-row';
+
+    const label = document.createElement('input');
+    label.type = 'text';
+    label.placeholder = "Libellé (ex : freelance, location…)";
+    label.value = r.label;
+    label.addEventListener('input', () => { r.label = label.value; });
+
+    const amount = document.createElement('input');
+    amount.type = 'number';
+    amount.placeholder = 'Montant annuel €';
+    amount.value = r.amount || '';
+    amount.addEventListener('input', () => { r.amount = parseFloat(amount.value) || 0; updateCalcNote(); });
+
+    const rm = document.createElement('button');
+    rm.className = 'fiche-remove';
+    rm.type = 'button';
+    rm.textContent = '×';
+    rm.addEventListener('click', () => {
+      revenus = revenus.filter(x => x.id !== r.id);
+      renderRevenus();
+      updateCalcNote();
+    });
+
+    row.appendChild(label);
+    row.appendChild(amount);
+    row.appendChild(rm);
+    revenuListEl.appendChild(row);
+  });
+}
+document.getElementById('addRevenu').addEventListener('click', () => {
+  revenus.push({id:'r'+(++revenuCounter), label:'', amount:0});
+  renderRevenus();
+});
+renderRevenus();
+
+/* ---------- CALCUL NOTE ---------- */
+function updateCalcNote(){
+  const n = fiches.length;
+  const loading = fiches.some(f => f.status === 'loading');
+  const note = document.getElementById('calcNote');
+  const btn = document.getElementById('calcBtn');
+  if(loading){
+    note.textContent = 'Analyse des fiches en cours…';
+    btn.disabled = true;
+  } else if(n === 0 && revenus.length === 0){
+    note.textContent = 'Ajoutez au moins une fiche ou un revenu';
+    btn.disabled = false;
+  } else {
+    note.textContent = n + ' fiche(s) · ' + revenus.length + ' autre(s) revenu(s)';
+    btn.disabled = false;
+  }
+}
+
+/* ---------- DATE LIMITE (calcul auto, année après année) ---------- */
+// Dates officielles connues (DGFiP) pour la campagne 2026 (revenus 2025).
+// Chaque année suivante est estimée par report de calendrier à partir de ces
+// dates de référence — le jour exact (souvent un jeudi) peut glisser de
+// quelques jours d'une année sur l'autre, à confirmer sur impots.gouv.fr.
+const REF_YEAR = 2026;
+const REF_DATES = {
+  ouverture: '2026-04-09',
+  papier:    '2026-05-19',
+  zone1:     '2026-05-21',
+  zone2:     '2026-05-28',
+  zone3:     '2026-06-04'
+};
+
+function shiftYears(iso, delta){
+  const d = new Date(iso + 'T00:00:00');
+  d.setFullYear(d.getFullYear() + delta);
+  return d;
+}
+
+function getCampaignDates(declarationYear){
+  const delta = declarationYear - REF_YEAR;
+  return {
+    exact: delta === 0,
+    declarationYear,
+    revenusYear: declarationYear - 1,
+    ouverture: shiftYears(REF_DATES.ouverture, delta),
+    papier: shiftYears(REF_DATES.papier, delta),
+    zone1: shiftYears(REF_DATES.zone1, delta),
+    zone2: shiftYears(REF_DATES.zone2, delta),
+    zone3: shiftYears(REF_DATES.zone3, delta)
+  };
+}
+
+function fmtDate(d){
+  return d.toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+}
+function fmtDateShort(d){
+  return d.toLocaleDateString('fr-FR', {day:'numeric', month:'short'});
+}
+
+function currentDeclarationYear(now){
+  const y = now.getFullYear();
+  const aprilFirst = new Date(y, 3, 1);
+  const midJuly = new Date(y, 6, 15);
+  if(now < aprilFirst) return y;        // campagne pas encore ouverte cette année
+  if(now <= midJuly) return y;          // campagne en cours cette année
+  return y + 1;                          // campagne de cette année finie, on vise la suivante
+}
+
+function renderDeadline(){
+  const now = new Date();
+  const declarationYear = currentDeclarationYear(now);
+  const dates = getCampaignDates(declarationYear);
+  const zone = document.getElementById('zoneSelect').value;
+
+  const statusEl = document.getElementById('deadlineStatus');
+  const gridEl = document.getElementById('deadlineGrid');
+  const noteEl = document.getElementById('deadlineNote');
+
+  // statut
+  let cls = 'closed', msg = '';
+  if(now < dates.ouverture){
+    const j = Math.ceil((dates.ouverture - now) / 86400000);
+    cls = 'closed';
+    msg = `🗓️ La campagne ${dates.declarationYear} (revenus ${dates.revenusYear}) ouvre dans ${j} jour(s), le ${fmtDate(dates.ouverture)}.`;
+  } else if(now <= dates[zone]){
+    const j = Math.ceil((dates[zone] - now) / 86400000);
+    cls = j <= 7 ? 'soon' : 'open';
+    msg = `${j <= 7 ? '🔥' : '🟢'} Il te reste ${j} jour(s) pour déclarer en ligne (limite ${fmtDate(dates[zone])}).`;
+  } else {
+    cls = 'closed';
+    const nextYearDates = getCampaignDates(dates.declarationYear + 1);
+    msg = `✅ La campagne ${dates.declarationYear} est terminée. Prochaine campagne (revenus ${dates.revenusYear + 1}) : ouverture estimée ${fmtDate(nextYearDates.ouverture)}.`;
+  }
+  statusEl.className = 'deadline-status ' + cls;
+  statusEl.textContent = msg;
+
+  // grille des 4 dates
+  gridEl.innerHTML = '';
+  const cells = [
+    ['Papier', dates.papier, null],
+    ['En ligne — Zone 1', dates.zone1, 'zone1'],
+    ['En ligne — Zone 2', dates.zone2, 'zone2'],
+    ['En ligne — Zone 3', dates.zone3, 'zone3'],
+  ];
+  cells.forEach(([label, d, key]) => {
+    const cell = document.createElement('div');
+    cell.className = 'deadline-cell' + (key === zone ? ' active' : '');
+    cell.innerHTML = `<div class="dc-label">${label}</div><div class="dc-date">${fmtDateShort(d)} ${dates.declarationYear}</div>`;
+    gridEl.appendChild(cell);
+  });
+
+  noteEl.textContent = dates.exact
+    ? `Dates officielles DGFiP pour la campagne ${dates.declarationYear} (revenus ${dates.revenusYear}).`
+    : `Dates estimées par report de calendrier depuis la campagne ${REF_YEAR} — la DGFiP publie les dates exactes chaque année en avril sur impots.gouv.fr.`;
+}
+document.getElementById('zoneSelect').addEventListener('change', renderDeadline);
+renderDeadline();
+
+
+const BAREME = [
+  {seuil:11600, taux:0},
+  {seuil:29579, taux:0.11},
+  {seuil:84577, taux:0.30},
+  {seuil:181917, taux:0.41},
+  {seuil:Infinity, taux:0.45}
+];
+
+function taxParPart(quotient){
+  let impot = 0;
+  let prev = 0;
+  for(const tranche of BAREME){
+    if(quotient > tranche.seuil){
+      impot += (tranche.seuil - prev) * tranche.taux;
+      prev = tranche.seuil;
+    } else {
+      impot += (quotient - prev) * tranche.taux;
+      break;
+    }
+  }
+  return Math.max(0, impot);
+}
+
+function formatEUR(n){
+  return Math.round(n).toLocaleString('fr-FR') + ' €';
+}
+
+/* ---------- CALCUL PRINCIPAL ---------- */
+document.getElementById('calcBtn').addEventListener('click', () => {
+  const parts = computeParts();
+  const totalSalaires = fiches.reduce((s,f) => s + (f.amount || 0), 0);
+  const totalAutres = revenus.reduce((s,r) => s + (r.amount || 0), 0);
+
+  const abattement = Math.min(14171, Math.max(495, totalSalaires * 0.10));
+  const abattementApplique = Math.min(abattement, totalSalaires);
+  const salairesImposables = Math.max(0, totalSalaires - abattementApplique);
+  const revenuImposable = salairesImposables + totalAutres;
+
+  const quotient = parts > 0 ? revenuImposable / parts : revenuImposable;
+  const impotParPart = taxParPart(quotient);
+  let impotBrut = impotParPart * parts;
+
+  // décote (approximation)
+  let decote = 0;
+  const seuilDecote = parts <= 1 ? 1964 : 3248;
+  const maxDecote = parts <= 1 ? 889 : 1470;
+  if(impotBrut < seuilDecote){
+    decote = Math.max(0, maxDecote - impotBrut * 0.4525);
+  }
+  const impotNet = Math.max(0, Math.round(impotBrut - decote));
+
+  showResult({
+    totalSalaires, abattementApplique, totalAutres, revenuImposable,
+    parts, quotient, impotBrut, decote, impotNet
+  });
+});
+
+/* ---------- ODOMÈTRE ---------- */
+function buildOdometer(targetValue){
+  const container = document.getElementById('odometer');
+  container.innerHTML = '<span class="odo-euro">€</span>';
+  const digitsStr = String(Math.round(targetValue));
+  const groups = [];
+  // insérer séparateurs de milliers
+  let s = digitsStr;
+  let out = [];
+  for(let i=0; i<s.length; i++){
+    out.push(s[i]);
+    const remaining = s.length - i - 1;
+    if(remaining > 0 && remaining % 3 === 0) out.push(',');
+  }
+  out.forEach(ch => {
+    if(ch === ','){
+      const col = document.createElement('div');
+      col.className = 'digit-col comma';
+      col.innerHTML = '<div class="digit-strip"><div>.</div></div>';
+      container.appendChild(col);
+    } else {
+      const col = document.createElement('div');
+      col.className = 'digit-col';
+      const strip = document.createElement('div');
+      strip.className = 'digit-strip';
+      // 3 répétitions de 0-9 pour permettre un effet de rotation
+      for(let rep=0; rep<3; rep++){
+        for(let d=0; d<10; d++){
+          const cell = document.createElement('div');
+          cell.textContent = d;
+          strip.appendChild(cell);
+        }
+      }
+      col.appendChild(strip);
+      container.appendChild(col);
+      const targetDigit = parseInt(ch,10);
+      const finalIndex = 20 + targetDigit; // troisième répétition
+      strip.style.transform = 'translateY(0px)';
+      strip.dataset.finalIndex = finalIndex;
+    }
+  });
+}
+
+function animateOdometer(){
+  const cols = document.querySelectorAll('#odometer .digit-strip[data-final-index]');
+  let maxDuration = 1.1;
+  cols.forEach((strip, i) => {
+    const idx = parseInt(strip.dataset.finalIndex, 10);
+    const duration = 1.1 + i * 0.12;
+    maxDuration = Math.max(maxDuration, duration);
+    strip.style.transition = `transform ${duration}s cubic-bezier(.15,.85,.2,1)`;
+    requestAnimationFrame(() => {
+      strip.style.transform = `translateY(${-idx * 60}px)`;
+    });
+  });
+  setTimeout(() => {
+    const odo = document.getElementById('odometer');
+    odo.classList.remove('pop');
+    void odo.offsetWidth; // reset animation
+    odo.classList.add('pop');
+    launchConfetti(odo);
+  }, maxDuration * 1000);
+}
+
+/* ---------- CONFETTI ---------- */
+function launchConfetti(anchorEl){
+  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(prefersReduced) return;
+  const rect = anchorEl.getBoundingClientRect();
+  const originX = rect.left + rect.width / 2;
+  const originY = rect.top + rect.height / 2;
+  const colors = ['#FF3D9A', '#8B5CF6', '#5B8DEF', '#C6FF3D', '#FFFFFF'];
+  const shapes = ['circle', 'square'];
+  const count = 60;
+
+  for(let i = 0; i < count; i++){
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    const shape = shapes[Math.floor(Math.random() * shapes.length)];
+    piece.style.background = color;
+    piece.style.borderRadius = shape === 'circle' ? '50%' : '2px';
+    piece.style.left = originX + 'px';
+    piece.style.top = originY + 'px';
+
+    const angle = Math.random() * Math.PI * 2;
+    const distance = 140 + Math.random() * 220;
+    const tx = Math.cos(angle) * distance;
+    const ty = Math.sin(angle) * distance - 60; // léger biais vers le haut
+    const rot = (Math.random() - 0.5) * 720;
+    const duration = 900 + Math.random() * 700;
+
+    document.body.appendChild(piece);
+
+    const anim = piece.animate([
+      { transform: 'translate(0,0) rotate(0deg) scale(1)', opacity: 1 },
+      { transform: `translate(${tx * 0.6}px, ${ty * 0.6 - 40}px) rotate(${rot * 0.6}deg) scale(1)`, opacity: 1, offset: 0.5 },
+      { transform: `translate(${tx}px, ${ty + 260}px) rotate(${rot}deg) scale(0.6)`, opacity: 0 }
+    ], {
+      duration,
+      easing: 'cubic-bezier(.25,.46,.45,.94)'
+    });
+    anim.onfinish = () => piece.remove();
+  }
+}
+
+function showResult(r){
+  const result = document.getElementById('result');
+  result.classList.add('show');
+  buildOdometer(r.impotNet);
+  document.getElementById('resultSub').textContent =
+    r.parts + ' part(s) · revenu net imposable ' + formatEUR(r.revenuImposable);
+
+  const breakdown = document.getElementById('breakdown');
+  breakdown.innerHTML = '';
+  const rows = [
+    ['Total salaires (net imposable brut)', formatEUR(r.totalSalaires)],
+    ['Abattement 10% frais professionnels', '– ' + formatEUR(r.abattementApplique)],
+    ['Autres revenus', formatEUR(r.totalAutres)],
+    ['Revenu net imposable', formatEUR(r.revenuImposable)],
+    ['Impôt brut (avant décote)', formatEUR(r.impotBrut)],
+    ['Décote appliquée', '– ' + formatEUR(r.decote)],
+  ];
+  rows.forEach(([label,val]) => {
+    const row = document.createElement('div');
+    row.className = 'brk-row';
+    row.innerHTML = `<span class="brk-label">${label}</span><span class="brk-val">${val}</span>`;
+    breakdown.appendChild(row);
+  });
+  const total = document.createElement('div');
+  total.className = 'brk-row total';
+  total.innerHTML = `<span class="brk-label">Impôt net à payer (estimation)</span><span class="brk-val">${formatEUR(r.impotNet)}</span>`;
+  breakdown.appendChild(total);
+
+  result.scrollIntoView({behavior:'smooth', block:'start'});
+  setTimeout(animateOdometer, 150);
+}
+</script>
+</body>
+</html>
